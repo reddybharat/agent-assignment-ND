@@ -1,0 +1,13 @@
+langchain
+langchain-core
+langchain-qdrant
+langchain-google-genai
+langchain-text-splitters
+
+langgraph
+pypdf
+streamlit
+
+python-dotenv
+qdrant-client
+sentence-transformers
