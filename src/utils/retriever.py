@@ -79,5 +79,4 @@ class Retriever:
         prompt = RETRIEVER_PROMPT.format(context=context, query=query)
 
         response = self.llm.invoke(prompt)
-        print("Response generation completed successfully.")
         return response

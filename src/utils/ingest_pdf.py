@@ -32,8 +32,6 @@ class IngestPDF:
         self.splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=50)
         self.embeddings = SentenceTransformer('all-MiniLM-L6-v2')
         
-        print("Ingestion system initialized successfully.")
-
     def load_pdf(self, file_path):
         """
         Reads the text content from a PDF file and returns it as a single string.
@@ -242,7 +240,6 @@ class IngestPDF:
                     vector_name="text_embedding"
                 )
                 
-                print("PDF ingestion process completed successfully.")
                 return vector_store
                 
             except Exception as e:

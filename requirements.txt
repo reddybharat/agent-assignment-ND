@@ -11,3 +11,9 @@ streamlit
 python-dotenv
 qdrant-client
 sentence-transformers
+
+# Testing dependencies
+pytest
+pytest-mock
+pytest-asyncio
+requests-mock

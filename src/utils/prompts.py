@@ -17,3 +17,21 @@ Context:
 Question: {query}
 
 Answer:"""
+
+
+WEATHER_CLASSIFICATION_PROMPT = """Analyze the user query and determine if it's asking about weather information. If it is a weather query, extract the location mentioned.
+
+User query: {query}
+
+Return your response in the following JSON format:
+{{
+    "is_weather": True/False,
+    "location": "extracted location or null"
+}}
+
+Examples:
+- "What's the weather in New York?" → {{"is_weather": True, "location": "New York"}}
+- "How's the weather today in London?" → {{"is_weather": True, "location": "London"}}
+- "Tell me about Python programming" → {{"is_weather": False, "location": null}}
+- "What's the temperature in Paris?" → {{"is_weather": True, "location": "Paris"}}"""
+
