@@ -38,6 +38,7 @@ class Retriever:
                     content=query,
                     task_type="retrieval_query",
                 )["embedding"],
+                limit=k,
             )
 
         formatted_results = []
