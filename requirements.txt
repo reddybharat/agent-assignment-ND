@@ -4,6 +4,7 @@ langchain-qdrant
 langchain-google-genai
 langchain-text-splitters
 langchain-docling
+google-generativeai
 
 langgraph
 pypdf

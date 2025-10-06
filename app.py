@@ -4,7 +4,9 @@ import tempfile
 from src.graphs.builder import build_graph
 from src.graphs.type import RAGAgentState
 # from src.utils.ingest_pdf import IngestPDF
-from src.utils.ingest_pdf_docling import IngestPDF
+# from src.utils.ingest_pdf_docling import IngestPDF
+from src.utils.ingest_pdf_docling_genaiembeddings import IngestPDF
+
 
 # Configure page
 st.set_page_config(

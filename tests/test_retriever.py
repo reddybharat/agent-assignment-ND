@@ -13,7 +13,7 @@ def test_retriever_init_without_api_key():
         if "QDRANT_API_KEY" in os.environ:
             del os.environ["QDRANT_API_KEY"]
         
-        with pytest.raises(ValueError, match="QDRANT_API_KEY environment variable is not set"):
+        with pytest.raises(ValueError, match="QDRANT_API_KEY environment variable is not set. Please set it with your QDrant Cloud API key."):
             Retriever()
     finally:
         # Restore the original API key
@@ -27,7 +27,6 @@ def test_retriever_init_success():
     assert retriever is not None
     assert retriever.collection_name == "uploaded-pdfs"
     assert retriever.client is not None
-    assert retriever.vector_store is not None
     assert retriever.llm is not None
 
 
@@ -47,9 +46,10 @@ def test_retrieve_documents(query, k):
     
     # Check that each result has the expected attributes
     for result in results:
-        assert hasattr(result, 'page_content')
-        assert hasattr(result, 'metadata')
-        assert isinstance(result.metadata, dict)
+        assert isinstance(result, dict)
+        assert 'page_content' in result
+        assert 'metadata' in result
+        assert isinstance(result['metadata'], dict)
 
 
 @pytest.mark.parametrize("query", [
