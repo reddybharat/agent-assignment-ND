@@ -1,14 +1,17 @@
-import os
-import re
-from typing import List
-from datetime import datetime
-from pypdf import PdfReader
 import qdrant_client
 from qdrant_client import models
 from langchain_qdrant import QdrantVectorStore
-from sentence_transformers import SentenceTransformer
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+from sentence_transformers import SentenceTransformer
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
+
+from langchain_docling import DoclingLoader
+from langchain_docling.loader import ExportType
+
+import os
+import logging
+from typing import List
+from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -29,53 +32,46 @@ class IngestPDF:
         )
         self.collection_name = collection_name
         
-        self.splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=50)
         self.embeddings = SentenceTransformer('all-MiniLM-L6-v2')
-        
-    def load_pdf(self, file_path):
-        """
-        Reads the text content from a PDF file and returns it as a single string.
 
-        Parameters:
-        - file_path (str): The file path to the PDF file.
-
-        Returns:
-        - str: The concatenated text content of all pages in the PDF.
-        """
+    def docling_load_and_split(self, file_path):
         try:
-            # Logic to read pdf
-            reader = PdfReader(file_path)
+            loader = DoclingLoader(
+                    file_path=file_path,
+                    export_type=ExportType.MARKDOWN
+            )
+            docs = loader.load()
 
-            # Loop over each page and store it in a variable
-            text = ""
-            for i, page in enumerate(reader.pages):
-                page_text = page.extract_text()
-                text += page_text
+            if not docs:
+                return []
+            
+            md_splitter = MarkdownHeaderTextSplitter(
+                        headers_to_split_on=[
+                            ("#", "Header_1"),
+                            ("##", "Header_2"),
+                            ],
+                        )
+            md_splits = [split for doc in docs for split in md_splitter.split_text(doc.page_content)]
 
-            return text
+            chunk_size = 2000
+            chunk_overlap = 50
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            )
+            splits = text_splitter.split_documents(md_splits)
+
+            return splits
+            
         except Exception as e:
-            raise
-
-    def split_text(self, text: str):
-        """
-        Splits a text string into chunks using RecursiveCharacterTextSplitter.
+            return []
         
-        Parameters:
-        - text (str): The input text to be split.
-
-        Returns:
-        - List[str]: A list containing text chunks.
-        """
-        # Use RecursiveCharacterTextSplitter to split the text
-        chunks = self.splitter.split_text(text)
-        return chunks
 
     def create_qdrant_db(self, documents: List, name: str = "uploaded-pdfs"):
         """
         Creates a Qdrant database using the provided documents and collection name.
 
         Parameters:
-        - documents: An iterable of documents to be added to the Qdrant database.
+        - documents: An iterable of document chunks to be added to the Qdrant database.
         - name (str): The name of the collection within the Qdrant database.
 
         Returns:
@@ -102,21 +98,22 @@ class IngestPDF:
             # Generate embeddings and create points
             texts = [doc['text'] for doc in documents]
             
+            
             # Convert embeddings to list to avoid numpy array issues
             embeddings = self.embeddings.encode(texts, normalize_embeddings=True)
             embeddings = embeddings.tolist()  # Convert to list to avoid numpy array boolean issues
             
             points = []
             for idx, (doc, embedding) in enumerate(zip(documents, embeddings)):
-                # Add metadata for better organization
                 metadata = {
-                    'filename': doc['filename'],
-                    'source': doc['filename'],  # Add source for compatibility
-                    'page': 1,  # Default page number
+                    'source': doc['filename'],
                     "chunk_index": idx,
                     "chunk_size": len(doc['text']),
                     "timestamp": str(datetime.now())
                 }
+
+                for key, value in doc['metadata'].items():
+                    metadata[key] = value
                 
                 # Ensure embedding is a list of floats
                 if not isinstance(embedding, list):
@@ -176,14 +173,8 @@ class IngestPDF:
         
         for i, file in enumerate(file_paths):
             try:
-                # Load PDF content
-                text = self.load_pdf(file)
-                
-                if not text or not text.strip():
-                    continue
-                
-                # Split text into chunks
-                chunked_text = self.split_text(text)
+
+                chunked_text = self.docling_load_and_split(file)
                 
                 if not chunked_text:
                     continue
@@ -191,13 +182,18 @@ class IngestPDF:
                 # Add file information to chunks
                 file_name = os.path.basename(file)
                 for j, chunk in enumerate(chunked_text):
-                    all_chunks.append({
-                        'text': chunk,
-                        'filename': file_name,
-                        'file_index': i,
-                        'chunk_index': j
-                    })
-                
+                    if chunk.page_content and chunk.page_content.strip():
+                        chunk_data_dict = {
+                            'text': chunk.page_content,
+                            'filename': file_name,
+                            'file_index': i,
+                            'chunk_index': j,
+                            'metadata': chunk.metadata
+                        }
+                        
+
+                        all_chunks.append(chunk_data_dict)
+
                 total_chunks += len(chunked_text)
                 any_content = True
                 
@@ -213,53 +209,14 @@ class IngestPDF:
             try:
                 collection, name = self.create_qdrant_db(all_chunks, "uploaded-pdfs")
                 
-                # Create and return vector store for compatibility
-                from langchain_qdrant import QdrantVectorStore
-                
-                # Create a custom embedding function for LangChain compatibility
-                from langchain.embeddings.base import Embeddings
-                
-                class SentenceTransformerEmbeddings(Embeddings):
-                    def __init__(self, model):
-                        self.model = model
-                    
-                    def embed_documents(self, texts):
-                        embeddings = self.model.encode(texts, normalize_embeddings=True)
-                        return embeddings.tolist()
-                    
-                    def embed_query(self, text):
-                        embedding = self.model.encode([text], normalize_embeddings=True)
-                        return embedding[0].tolist()
-                
-                embedding_function = SentenceTransformerEmbeddings(self.embeddings)
-                
                 vector_store = QdrantVectorStore(
                     client=self.client,
                     collection_name=name,
-                    embedding=embedding_function,
+                    embedding=self.embeddings,
                     vector_name="text_embedding"
-                )
-                
+                )             
                 return vector_store
                 
             except Exception as e:
-                # Return a basic success indicator even if vector store creation fails
                 return None
-        
         return None
-
-    def load_qdrant_collection(self, name: str = "uploaded-pdfs"):
-        """
-        Loads an existing Qdrant collection.
-
-        Parameters:
-        - name (str): The name of the collection to load.
-
-        Returns:
-        - qdrant_client.Collection: The loaded Qdrant collection.
-        """
-        try:
-            collection = self.client.get_collection(name)
-            return collection
-        except Exception as e:
-            raise
