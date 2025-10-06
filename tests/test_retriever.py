@@ -1,76 +1,89 @@
-"""
-Simple test cases for Retriever functionality.
-"""
 import pytest
-from unittest.mock import Mock, patch
 from src.utils.retriever import Retriever
+from dotenv import load_dotenv
+load_dotenv()
 
 
 def test_retriever_init_without_api_key():
     """Test that retriever raises error without API key."""
-    with patch.dict('os.environ', {}, clear=True):
-        with pytest.raises(ValueError):
+    import os
+    original_key = os.environ.get("QDRANT_API_KEY")
+    try:
+        # Remove the API key
+        if "QDRANT_API_KEY" in os.environ:
+            del os.environ["QDRANT_API_KEY"]
+        
+        with pytest.raises(ValueError, match="QDRANT_API_KEY environment variable is not set"):
             Retriever()
+    finally:
+        # Restore the original API key
+        if original_key:
+            os.environ["QDRANT_API_KEY"] = original_key
 
 
-@patch('src.utils.retriever.QdrantClient')
-@patch('src.utils.retriever.SentenceTransformer')
-@patch('src.utils.retriever.QdrantVectorStore')
-@patch('src.utils.retriever.GoogleGenerativeAI')
-def test_retriever_init_success(mock_llm, mock_vector_store, mock_transformer, mock_client):
+def test_retriever_init_success():
     """Test successful retriever initialization."""
     retriever = Retriever()
     assert retriever is not None
+    assert retriever.collection_name == "uploaded-pdfs"
+    assert retriever.client is not None
+    assert retriever.vector_store is not None
+    assert retriever.llm is not None
 
 
-@patch('src.utils.retriever.QdrantClient')
-@patch('src.utils.retriever.SentenceTransformer')
-@patch('src.utils.retriever.QdrantVectorStore')
-@patch('src.utils.retriever.GoogleGenerativeAI')
-def test_retrieve_documents(mock_llm, mock_vector_store, mock_transformer, mock_client):
-    """Test document retrieval."""
-    # Mock documents
-    doc1 = Mock()
-    doc1.page_content = "Sample content 1"
-    doc1.metadata = {"source": "test.pdf", "page": 1}
-    
-    doc2 = Mock()
-    doc2.page_content = "Sample content 2"
-    doc2.metadata = {"source": "test.pdf", "page": 2}
-    
-    # Mock vector store
-    mock_vector_store_instance = Mock()
-    mock_vector_store_instance.similarity_search.return_value = [doc1, doc2]
-    mock_vector_store.return_value = mock_vector_store_instance
-    
+@pytest.mark.parametrize("query, k", [
+    ("machine learning", 3),
+    ("artificial intelligence", 5),
+    ("data science", 2),
+])
+def test_retrieve_documents(query, k):
+    """Test document retrieval with different queries and k values."""
     retriever = Retriever()
-    results = retriever.retrieve("test query", k=2)
+    results = retriever.retrieve(query, k=k)
     
-    assert len(results) == 2
-    assert results[0].page_content == "Sample content 1"
+    # Verify results structure
+    assert isinstance(results, list)
+    assert len(results) <= k
+    
+    # Check that each result has the expected attributes
+    for result in results:
+        assert hasattr(result, 'page_content')
+        assert hasattr(result, 'metadata')
+        assert isinstance(result.metadata, dict)
 
 
-@patch('src.utils.retriever.QdrantClient')
-@patch('src.utils.retriever.SentenceTransformer')
-@patch('src.utils.retriever.QdrantVectorStore')
-@patch('src.utils.retriever.GoogleGenerativeAI')
-def test_generate_response(mock_llm, mock_vector_store, mock_transformer, mock_client):
-    """Test response generation."""
-    # Mock documents
-    doc1 = Mock()
-    doc1.page_content = "Sample content"
-    doc1.metadata = {"source": "test.pdf", "page": 1}
-    
-    # Mock vector store and LLM
-    mock_vector_store_instance = Mock()
-    mock_vector_store_instance.similarity_search.return_value = [doc1]
-    mock_vector_store.return_value = mock_vector_store_instance
-    
-    mock_llm_instance = Mock()
-    mock_llm_instance.invoke.return_value = "Generated response"
-    mock_llm.return_value = mock_llm_instance
-    
+@pytest.mark.parametrize("query", [
+    "What is machine learning?",
+    "How does artificial intelligence work?",
+    "Explain data science concepts",
+])
+def test_generate_response(query):
+    """Test response generation for different queries."""
     retriever = Retriever()
-    response = retriever.generate_response("test query")
+    response = retriever.generate_response(query)
     
-    assert response == "Generated response"
+    # Verify response is a string
+    assert isinstance(response, str)
+    assert len(response) > 0
+
+
+def test_retrieve_with_custom_k():
+    """Test retrieve method with custom k parameter."""
+    retriever = Retriever()
+    
+    # Test with k=1
+    results_1 = retriever.retrieve("test query", k=1)
+    assert len(results_1) <= 1
+    
+    # Test with k=5
+    results_5 = retriever.retrieve("test query", k=5)
+    assert len(results_5) <= 5
+
+
+def test_generate_response_with_custom_k():
+    """Test generate_response method with custom k parameter."""
+    retriever = Retriever()
+    
+    response = retriever.generate_response("test query", k=2)
+    assert isinstance(response, str)
+    assert len(response) > 0

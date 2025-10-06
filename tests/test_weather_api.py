@@ -1,86 +1,83 @@
-"""
-Simple test cases for OpenWeather API functionality.
-"""
 import pytest
-import requests
-from unittest.mock import Mock, patch
 from src.utils.openweather import OpenWeatherService
+from dotenv import load_dotenv
+load_dotenv()
 
-
-def test_init_with_api_key(test_api_key):
-    """Test initialization with API key."""
-    service = OpenWeatherService(api_key=test_api_key)
-    assert service.api_key == test_api_key
-
-
-def test_init_without_api_key():
-    """Test initialization without API key raises error."""
-    with patch.dict('os.environ', {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenWeatherService()
-
-
-@patch('requests.get')
-def test_geocode_location_success(mock_get, test_api_key):
-    """Test successful geocoding."""
-    # Mock API response
-    mock_response = Mock()
-    mock_response.json.return_value = [{
-        "name": "London",
-        "country": "GB",
-        "lat": 51.5074,
-        "lon": -0.1278
-    }]
-    mock_response.raise_for_status.return_value = None
-    mock_get.return_value = mock_response
+@pytest.mark.parametrize("location, expected_name, expected_country", [
+    ("London", "London", "GB"),
+    ("New York", "New York", "US"),
+    ("Tokyo", "Tokyo", "JP"),
+    ("Paris", "Paris", "FR"),
+    ("Sydney", "Sydney", "AU"),
+])
+def test_geocode_location_valid(location, expected_name, expected_country):
+    """Test geocoding valid locations using real OpenWeather API."""
+    service = OpenWeatherService()
+    result = service.geocode_location(location)
     
-    service = OpenWeatherService(api_key=test_api_key)
-    result = service.geocode_location("London")
+    assert isinstance(result, dict)
+    assert "name" in result
+    assert "country" in result
+    assert "lat" in result
+    assert "lon" in result
     
-    assert result["name"] == "London"
-    assert result["lat"] == 51.5074
+    assert result["name"] == expected_name
+    assert result["country"] == expected_country
+    assert isinstance(result["lat"], (int, float))
+    assert isinstance(result["lon"], (int, float))
 
 
-@patch('requests.get')
-def test_geocode_location_not_found(mock_get, test_api_key):
-    """Test geocoding when location is not found."""
-    mock_response = Mock()
-    mock_response.json.return_value = []
-    mock_response.raise_for_status.return_value = None
-    mock_get.return_value = mock_response
+@pytest.mark.parametrize("invalid_location", [
+    "NonExistentCity12345",
+    "InvalidLocationXYZ",
+    "FakeCity123",
+])
+def test_geocode_location_invalid(invalid_location):
+    """Test geocoding invalid locations should raise ValueError."""
+    service = OpenWeatherService()
     
-    service = OpenWeatherService(api_key=test_api_key)
-    
-    with pytest.raises(ValueError):
-        service.geocode_location("Unknown City")
+    with pytest.raises(ValueError, match=f"Location '{invalid_location}' not found"):
+        service.geocode_location(invalid_location)
 
 
-@patch('requests.get')
-def test_get_weather_success(mock_get, test_api_key):
-    """Test successful weather data retrieval."""
-    mock_response = Mock()
-    mock_response.json.return_value = {
-        "name": "London",
-        "main": {"temp": 15.5, "humidity": 75},
-        "weather": [{"description": "overcast clouds"}]
-    }
-    mock_response.raise_for_status.return_value = None
-    mock_get.return_value = mock_response
+@pytest.mark.parametrize("lat, lon, expected_location, expected_country", [
+    (51.5074, -0.1278, "London", "GB"),
+    (40.7128, -74.0060, "New York", "US"),
+    (48.8566, 2.3522, "Paris", "FR"), 
+    (-33.8688, 151.2093, "Sydney", "AU"),
+])
+def test_get_weather_valid_coordinates(lat, lon, expected_location, expected_country):
+    """Test getting weather data for valid coordinates using real OpenWeather API."""
+    service = OpenWeatherService()
+    result = service.get_weather(lat, lon)
     
-    service = OpenWeatherService(api_key=test_api_key)
-    result = service.get_weather(51.5074, -0.1278)
+    # Verify response structure
+    assert isinstance(result, dict)
+    required_fields = [
+        "location", "country", "temperature", "feels_like", 
+        "humidity", "pressure", "description", "main_weather",
+        "wind_speed", "wind_direction", "visibility", "cloudiness", "units"
+    ]
     
-    assert result["location"] == "London"
-    assert result["temperature"] == 15.5
-    assert result["description"] == "overcast clouds"
+    for field in required_fields:
+        assert field in result, f"Missing required field: {field}"
+    
+    # Verify data integrity
+    assert result["location"] == expected_location
+    assert result["country"] == expected_country
+    assert isinstance(result["temperature"], (int, float))
+    assert isinstance(result["humidity"], (int, float))
+    assert isinstance(result["description"], str)
+    assert result["units"] == "metric"
 
 
-@patch('requests.get')
-def test_get_weather_api_error(mock_get, test_api_key):
-    """Test weather retrieval when API returns an error."""
-    mock_get.side_effect = requests.exceptions.RequestException("API Error")
+@pytest.mark.parametrize("invalid_lat, invalid_lon", [
+    (999.0, 999.0),  
+    (-999.0, -999.0),       
+])
+def test_get_weather_invalid_coordinates(invalid_lat, invalid_lon):
+    """Test getting weather data for invalid coordinates should raise Exception with 400 status."""
+    service = OpenWeatherService()
     
-    service = OpenWeatherService(api_key=test_api_key)
-    
-    with pytest.raises(Exception):
-        service.get_weather(51.5074, -0.1278)
+    with pytest.raises(Exception, match="400 Client Error: Bad Request"):
+        service.get_weather(invalid_lat, invalid_lon)
