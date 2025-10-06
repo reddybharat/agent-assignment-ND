@@ -68,9 +68,7 @@ def upload_and_ingest_tab():
                     # Mark ingestion as completed
                     st.session_state.ingestion_completed = True
                     st.session_state.uploaded_files = file_paths
-                    
-                    st.success("Files ingested successfully! You can now ask questions in the 'Ask Questions' tab.")
-                    
+                                        
                     # Clean up temporary files
                     for file_path in file_paths:
                         if os.path.exists(file_path):
@@ -108,7 +106,6 @@ def ask_questions_tab():
                 try:
                     # Create initial state for the graph
                     initial_state = RAGAgentState(
-                        files_uploaded=[],  # No files needed since they're already ingested
                         query=user_query,
                         answer="",
                         status="processing",
