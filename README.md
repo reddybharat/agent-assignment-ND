@@ -1,6 +1,6 @@
 # AI Assistant
 
-A RAG (Retrieval-Augmented Generation) application that combines document processing with weather information services. Built using LangGraph for workflow orchestration, this application can process uploaded PDF documents and answer questions about their content, or provide real-time weather information.
+An application that combines document processing with weather information services. Built using LangGraph for workflow orchestration, this application can process uploaded PDF documents and answer questions about their content, or provide real-time weather information.
 
 ## Table of Contents
 
@@ -59,7 +59,7 @@ agent-assignment-ND/
 └── README.md                      # This file
 ```
 
-**Note**: The `ingest_pdf.py` and `ingest_pdf_docling.py` files are legacy and unused. The current implementation uses `ingest_pdf_docling_genaiembeddings.py`.
+***Note**: The `ingest_pdf.py` and `ingest_pdf_docling.py` files are legacy and unused. The current implementation uses `ingest_pdf_docling_genaiembeddings.py`.*
 
 ## Project Architecture
 
@@ -68,7 +68,7 @@ This project implements a comprehensive RAG system with two main components: a d
 ### Document Ingestion Pipeline
 **Purpose**: Processes and indexes uploaded PDF documents into a vector database using advanced document parsing.
 
-*Note : This process occurs separately from query processing and must be completed before documents can be queried.*
+***Note** : This process occurs separately from query processing and must be completed before documents can be queried.*
 
 
 #### Ingestion Architecture
@@ -319,7 +319,7 @@ Once you have the application running (`streamlit run app.py`), follow these ste
 3. **Processing**: Appropriate node (Weather or Retriever) processes the query
 4. **Response**: Generated answer is displayed to the user
 
-**Note**: Document ingestion and query processing are separate workflows. Documents must be ingested before queries can be processed.
+***Note**: Document ingestion and query processing are separate workflows. Documents must be ingested before queries can be processed.*
 
 ## Testing
 
@@ -373,7 +373,7 @@ Tests the OpenWeatherMap API integration:
 ```bash
 pip install pytest
 ```
-*Note : Should already be installed with requirements.txt*
+***Note** : Should already be installed with requirements.txt*
 
 **Environment Requirements**:
 - Valid API keys in `.env` file (Google API, OpenWeatherMap, Qdrant)
@@ -394,7 +394,7 @@ The LangSmith evaluator is a standalone utility for:
 
 ### Usage
 
-*Note: This is a separate evaluation tool, not integrated into the main application.*
+***Note**: This is a separate evaluation tool, not integrated into the main application.*
 
 ```bash
 # Run the evaluation script directly
@@ -452,7 +452,7 @@ With LangSmith tracing enabled in the environment variables, you can monitor and
 - Internet connection for API calls
 - LangSmith tracing enabled (`LANGCHAIN_TRACING_V2=true`)
 
-**Note**: The evaluator is optional and only needed for model evaluation and testing. It does not affect the main application functionality.
+***Note**: The evaluator is optional and only needed for model evaluation and testing. It does not affect the main application functionality.*
 
 
 ## Error Handling
