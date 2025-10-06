@@ -51,10 +51,9 @@ class Retriever:
         
         self.llm = GoogleGenerativeAI(model="gemini-2.0-flash")
 
-    def retrieve(self, query: str, k: int = 3):
+    def retrieve(self, query: str, k: int = 7):
         """Retrieve top-k similar chunks from Qdrant"""
         results = self.vector_store.similarity_search(query, k=k)
-        
         # If page_content is empty, try to get content from metadata
         for result in results:
             if not result.page_content and result.metadata:
@@ -66,7 +65,7 @@ class Retriever:
         
         return results
 
-    def generate_response(self, query: str, k: int = 3) -> str:
+    def generate_response(self, query: str, k: int = 7) -> str:
         """Retrieve context and generate a response with Gemini 2 Flash"""
         docs = self.retrieve(query, k=k)
         

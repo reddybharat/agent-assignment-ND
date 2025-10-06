@@ -3,6 +3,7 @@ langchain-core
 langchain-qdrant
 langchain-google-genai
 langchain-text-splitters
+langchain-docling
 
 langgraph
 pypdf
