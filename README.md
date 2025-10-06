@@ -329,12 +329,20 @@ The project includes a comprehensive test suite covering all major components wi
 
 **Quick Start**:
 ```bash
-# Run all tests
-python tests/run_tests.py
+# Run all tests (recommended)
+python -m pytest tests/ -v
 
-# Or use pytest directly
-pytest tests/
+# Or use the custom test runner
+python -m tests.run_tests
+
+# Run specific test file
+python -m pytest tests/test_retriever.py -v
+
+# Run specific test function
+python -m pytest tests/test_retriever.py::test_retriever_init_success -v
 ```
+
+**Important**: Always use `python -m pytest` instead of just `pytest` to avoid import path issues across different systems.
 
 ### Test Structure
 
@@ -398,7 +406,7 @@ The LangSmith evaluator is a standalone utility for:
 
 ```bash
 # Run the evaluation script directly
-python evaluation/langsmith_evaluator.py
+python -m evaluation.langsmith_evaluator
 ```
 
 ### What It Tests
