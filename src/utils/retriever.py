@@ -50,7 +50,6 @@ class Retriever:
         )
         
         self.llm = GoogleGenerativeAI(model="gemini-2.0-flash")
-        print("Retriever system initialized successfully.")
 
     def retrieve(self, query: str, k: int = 3):
         """Retrieve top-k similar chunks from Qdrant"""

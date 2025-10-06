@@ -19,7 +19,8 @@ def weather_node(state: RAGAgentState) -> RAGAgentState:
 
         # Step 2: Use Current Weather API to get weather data using coordinates
         weather_data = service.get_weather(lat, lon)
-        state["answer"] = weather_data
+        response_text = f"The weather in {weather_data['location']} is {weather_data['description']} with a temperature of {weather_data['temperature']}°C."
+        state["answer"] = response_text
 
     except Exception as e:
         state["answer"] = f"Error getting weather data: {str(e)}"
