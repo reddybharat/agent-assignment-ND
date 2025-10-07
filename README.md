@@ -21,6 +21,7 @@ An application that combines document processing with weather information servic
   - [How to Use the Application](#how-to-use-the-application)
   - [Document Ingestion Workflow](#document-ingestion-workflow)
   - [Query Processing Workflow](#query-processing-workflow)
+- [Screenshots](#screenshots)
 - [Testing](#testing)
 - [LangSmith Evaluation](#langsmith-evaluation)
 - [Error Handling](#error-handling)
@@ -201,7 +202,6 @@ Create a `.env` file in the project root with the following variables:
 ```bash
 # Google Gemini API Key (Required)
 GOOGLE_API_KEY=your_google_api_key_here
-GEMINI_API_KEY=your_google_api_key_here
 
 # OpenWeatherMap API Key (Required for weather functionality)
 OPENWEATHER_API_KEY=your_openweather_api_key_here
@@ -344,6 +344,8 @@ python -m pytest tests/test_retriever.py::test_retriever_init_success -v
 
 **Important**: Always use `python -m pytest` instead of just `pytest` to avoid import path issues across different systems.
 
+**Visual Example**: See the [Screenshots](#screenshots) section for a visual example of the test execution results.
+
 ### Test Structure
 
 The test suite includes three main test files:
@@ -452,6 +454,11 @@ With LangSmith tracing enabled in the environment variables, you can monitor and
 - Performance metrics and timing analysis
 - Error tracking and debugging information
 - Cost analysis for API usage
+
+**Visual Examples**: See the [Screenshots](#screenshots) section for visual examples of:
+- LangGraph execution traces for RAG queries
+- LangGraph execution traces for weather queries
+- Custom dataset creation and evaluation results
 
 ### Prerequisites for Evaluation
 

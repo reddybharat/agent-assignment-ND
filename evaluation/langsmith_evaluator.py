@@ -12,9 +12,8 @@ load_dotenv()
 
 
 class LangSmithEvaluator:
-    def __init__(self, dataset_name: str = "langgraph-nd-test-dataset"):
+    def __init__(self, dataset_name: str = "assignment-langgraph-dataset"):
         self.client = Client()
-        #weather-classification-nd-test-dataset
         self.dataset_name = dataset_name
 
     def get_custom_dataset(self):
